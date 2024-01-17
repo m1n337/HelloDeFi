@@ -1,0 +1,6 @@
+{
+    "dependencies": [
+        "forge-std@latest",
+        "openzeppelin-contracts@v5.0.1"
+    ]
+}
