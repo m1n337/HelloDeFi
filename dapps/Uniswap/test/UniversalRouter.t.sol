@@ -34,7 +34,7 @@ contract UniversalRouterTest is Test {
     address constant QUOTERV2 = 0x61fFE014bA17989E743c5F6cB21bF9697530B21e;
 
     function setUp() public {
-        vm.createSelectFork("https://rpc.ankr.com/arbitrum", 167946480);
+        vm.createSelectFork("https://rpc.ankr.com/arbitrum");
     }
 
     function test_swap() public {
