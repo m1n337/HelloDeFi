@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import os
 import sys
@@ -23,8 +24,8 @@ def execute_cmd(cmd, cwd=None):
 
 
 HOME = Path.home()
-BASE_LIB_PATH=Path(".hello_defi/lib")
-DEFAULT_LIB_PATH = HOME / BASE_LIB_PATH
+BASE_LIB_PATH = HOME / Path(".hello_defi/lib")
+DEFAULT_LIB_PATH = BASE_LIB_PATH / Path('latest')
 
 FOUNDRY_TOML_TEMPLATE = """
 [profile.default]
@@ -34,6 +35,7 @@ libs = [${libs}]
 ${remappings_field}
 ignored_error_codes = ["license", "code-size"]
 ${rpc_endpoints_field}
+via_ir=true
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 """
@@ -84,14 +86,14 @@ def init_config(path):
             print(f"[Check] dependency: {lib_name}@{version}")
             if version == "latest":
                 # check if the lib_name exist in the BASE_LIB_PATH
-                lib_path = DEFAULT_LIB_PATH / Path(f"latest/{lib_name}")
+                lib_path = BASE_LIB_PATH / Path(f"latest/{lib_name}")
             else:
-                lib_path = DEFAULT_LIB_PATH / Path(f"{lib_name}/{version}")
+                lib_path = BASE_LIB_PATH / Path(f"{lib_name}/{version}")
             
             if not lib_path.exists():
                 try:
                     lib_url = LIB_URLS[lib_name]
-                    execute_cmd(f"git clone {lib_url} {lib_path}")
+                    execute_cmd(f"git clone --recurse-submodules {lib_url} {lib_path}")
                     if version != "latest":
                         execute_cmd(cmd=f"git checkout {version}", cwd=lib_path)
                 except KeyError:
