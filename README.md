@@ -4,7 +4,7 @@
 
 - Foundry
 
-- [ x ] cast
+- [x] cast
 
 ## Dapps
 
