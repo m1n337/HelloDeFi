@@ -46,7 +46,33 @@ LIB_URLS = {
 }
 
 DEFAULT_REMAPPINGS_PREFIX = {
-    "forge-std": "src"
+    "forge-std": "src",
+    "evm-address": "src"
+}
+
+CHAIN_IDS = {
+    "mainnet": 1,
+    "bsc": 56,
+    "polygon": 137,
+    "polygon_zkevm": 1101,
+    "avalance": 43114,
+    "arbitrum": 42161,
+    "arbitrum_nove": 42170,
+    "optimism": 10,
+    "fantom": 250,
+    "moonriver": 1285,
+    "gnosis": 100,
+    "celo": 42220,
+    "base": 8453,
+    "metis": 1088,
+    "harmony": 1666600000,
+    "zksync_era": 324,
+    "linea": 59144
+}
+
+# providers: alchemy' -> infra' -> ankr
+ANKR_PUBLIC_RPC = {
+
 }
 
 def generate_rpc_endpoints():
@@ -76,13 +102,24 @@ def generate_vscode_settings_file(remappings=None):
         
     return json.dumps(settings_json)
 
+GITHUB_BASE_URL = "https://github.com/"
+
+def _install_library(lib_url, version, lib_path):
+    execute_cmd(f"git clone --recurse-submodules {lib_url} {lib_path}")
+    if version != "latest":
+        execute_cmd(cmd=f"git checkout {version}", cwd=lib_path)
+
 def init_config(path):
     config_file_path = Path(path) / Path("config.json")
     remappings = {}
     with open(config_file_path, 'r') as f:
         cfg = json.load(f)
-        for d in cfg["dependencies"]:
-            [lib_name, version] = d.split('@')
+        for d in cfg["dependencies"]:            
+            dep = d.split('@')
+            if len(dep) == 2:
+                [lib_name, version] = dep
+            elif len(dep) == 3:
+                [lib_name, _lib_url, version] = dep
             print(f"[Check] dependency: {lib_name}@{version}")
             if version == "latest":
                 # check if the lib_name exist in the BASE_LIB_PATH
@@ -93,11 +130,14 @@ def init_config(path):
             if not lib_path.exists():
                 try:
                     lib_url = LIB_URLS[lib_name]
-                    execute_cmd(f"git clone --recurse-submodules {lib_url} {lib_path}")
-                    if version != "latest":
-                        execute_cmd(cmd=f"git checkout {version}", cwd=lib_path)
+                    _install_library(lib_url, version, lib_path)
                 except KeyError:
-                    print(f"Library {lib_name} not found")
+                    try:
+                        # try fetch library from github.com
+                        lib_url = GITHUB_BASE_URL + _lib_url + ".git"
+                        _install_library(lib_url, version, lib_path)
+                    except Exception as e:
+                        print(f"Library {lib_name} not found: ", e)
             else:
                 print(f"Library {lib_name} already installed...")
             

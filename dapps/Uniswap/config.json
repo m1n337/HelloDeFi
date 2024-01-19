@@ -1,6 +1,7 @@
 {
     "dependencies": [
         "forge-std@latest",
-        "openzeppelin-contracts@v5.0.1"
+        "openzeppelin-contracts@v5.0.1",
+        "evm-address@m1n337/evm-address@latest"
     ]
 }
