@@ -135,13 +135,46 @@ First, you can disassemble the bytecodes with the command `cast da <code>`. Here
 # return mem[0x0:ret_size]
 ```
 
-Hint: the address of CREATE is: `keccak(RLP(creator, nonce))[12:]`
+> Hint: the address of CREATE is: `keccak(RLP(creator, nonce))[12:]`
+> 
+> Let's delve into an example using the address `0x1234567891234567891234567891234567891234` with nonce of `0`.
+> For our example, the raw data to encode is: `[hex"1234567891234567891234567891234567891234", 0]`. The encoding process is broken down into several steps:
+> 1. Encoding the array prefix: [0xd6 (0xc0 + 21 + 1) # 21: len(rlp(0x1234567891234567891234567891234567891234)), 1: len(rlp(0))
+> 2. Encode the address: [0x94 (0x80 + 20), hex"1234567891234567891234567891234567891234"
+> 3. Encode the nonce: [0x80
+> 
+> Combining these encoded components results in [0xd6, 0x94, 1234..., 0x80]. 
+> => keccak256 = 6d132a23257f7667e014a4942c96d4a0095e569732c32182e1abc1051b3f591a
+> => result = 0x0bd5f929b456ca8af11ebe2ce4eb117395af3b69
+> 
+> This computation can be verified using command: `cast ca 1234567891234567891234567891234567891234 --nonce 0`, which outputs "Computed Address: 0x0BD5f929B456Ca8Af11Ebe2CE4eB117395AF3b69".
 
-Note: Solidity not support RLP encode
+> Note: Solidity does not support RLP encoding. I implementat a simplified version for purpose of calculating contract creation address (you can find it in `toolkits/my/crypto/RLPEncode.sol`).
 
 - cloneDeterministic: the CREATE2 version of the clone
 
-Hint: the address of CREATE2 is: `keccak256( 0xff ++ creator ++ salt ++ keccak256(init_code))[12:]`
+```solidity
+mstore(add(ptr, 0x38), deployer)
+
+# store the miniminal proxy code into the mem[ptr+0x0c:ptr+0x0c+0x34], 0x34 = 0x24 + 0x10 (16 bytes)
+mstore(add(ptr, 0x24), 0x5af43d82803e903d91602b57fd5bf3ff)
+mstore(add(ptr, 0x14), implementation)
+mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73)
+
+mstore(add(ptr, 0x58), salt)
+```
+
+Note: the unit of mstore is 32 bytes, that is why it store into memory with an reversed order.
+
+mem[ptr+0x0c:ptr+0x43] = code (len = 0x37)
+mem[ptr+0x43] = 0xff
+mem[ptr+0x44:ptr+0x58] = deployer
+mem[ptr+0x58:ptr+0x78] = salt
+mem[ptr+0x78:ptr+0x98] = keccak(code::(0x0c-0x43))
+
+keccak(mem[0x43:0x98]) = keccak(0xff ++ deployer ++ salt ++ keccak(init_code))
+
+> Hint: the address of CREATE2 is: `keccak256( 0xff ++ creator ++ salt ++ keccak256(init_code))[12:]`
 
 - predictDeterministicAddress: predict the address created with `cloneDeterministic`
 
