@@ -98,31 +98,41 @@ contract HelloManagerTest is Test {
         console2.log("USER --> proxy.play()");
         vm.prank(user);
         proxy.play();
+        
+        console2.log("\n* [RULE]: a granted role with execution delay must scheudle first\n");
+        
+        console2.log("USER -x-> proxy.specialPlay()");
+        vm.prank(user);
+        vm.expectRevert();
+        proxy.specialPlay();
 
+        console2.log("DEV --> manager.grantRole(PLAYER_VIP, user, 1 hours)");
+        vm.warp(10000);
+        vm.prank(DEV);
+        manager.grantRole(PLAYER_VIP, user, 1 hours);
+        
+        _print_access(PLAYER_VIP, user);
 
         console2.log("USER -x-> proxy.specialPlay()");
         vm.prank(user);
         vm.expectRevert();
         proxy.specialPlay();
 
-        vm.warp(10000);
-        vm.prank(DEV);
-        manager.grantRole(PLAYER_VIP, user, 1 hours);
-        
-        _print_access(PLAYER_VIP, user);
+        console2.log("USER -> manager.schedule(address(proxy), abi.encodeWithSignature(\"specialPlay()\"), 0)");
+        vm.prank(user);
+        manager.schedule(address(proxy), abi.encodeWithSignature("specialPlay()"), 0);
         console2.log("After 1 hours ...");
         uint32 oneHoursLatter = uint32(uint256(block.timestamp + 1 hours));
         vm.warp(oneHoursLatter + 1);
-        console2.log(block.timestamp);
-        _print_access(PLAYER_VIP, user);
-
+        
         console2.log("USER --> proxy.specialPlay()");
         vm.prank(user);
         proxy.specialPlay();
 
+        console2.log("=> isPlayer[USER] = ", proxy.isPalyer(user));
 
         // set grant delay
-        
+
     }
     
     function test_upgradeable_manager_target_level() public {
