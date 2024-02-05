@@ -1,5 +1,8 @@
 {
-    "dependencies": [
-        "forge-std@latest"
-    ]
+    "dependencies": {
+        "forge-std": {
+            "version": "latest",
+            "rename": "hello-fs"
+        }
+    }
 }

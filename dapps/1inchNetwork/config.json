@@ -1,7 +1,17 @@
 {
-    "dependencies": [
-        "forge-std@latest",
-        "openzeppelin-contracts@v5.0.1",
-        "evm-address@m1n337/evm-address@latest"
-    ]
+    "dependencies": {
+        "forge-std": {
+            "version": "latest",
+            "rename": "hello-fs"
+        },
+        "openzeppelin-contracts": {
+            "version": "v5.0.1",
+            "rename": "hello-oz"
+        },
+        "evm-address": {
+            "version": "latest",
+            "github": "m1n337/evm-address",
+            "rename": "evm-address"
+        }
+    }
 }

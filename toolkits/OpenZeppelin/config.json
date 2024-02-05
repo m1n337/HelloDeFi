@@ -1,6 +1,16 @@
 {
-    "dependencies": [
-        "forge-std@latest",
-        "openzeppelin-contracts@v5.0.1"
-    ]
+    "dependencies": {
+        "forge-std": {
+            "version": "latest",
+            "rename": "hello-fs"
+        },
+        "openzeppelin-contracts-upgradeable": {
+            "version": "v5.0.1",
+            "rename": "hello-uoz"
+        },
+        "openzeppelin-contracts": {
+            "version": "v5.0.1",
+            "rename": "hello-oz"
+        }
+    }
 }

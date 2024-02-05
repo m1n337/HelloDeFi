@@ -1,6 +1,6 @@
 import { PoolAddress } from './libraries/PoolAddress.sol';
 
-import {IERC20} from 'openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
+import {IERC20} from 'hello-oz/token/ERC20/IERC20.sol';
 
 library UniswapV3 {
     address constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;

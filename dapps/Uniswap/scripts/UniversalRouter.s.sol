@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Script, console2} from "forge-std/Script.sol";
+import {Script, console2} from "hello-fs/Script.sol";
 
-import 'forge-std/console.sol';
 
 import { UniversalRouter } from '../src/universal-router/index.sol';
 import { IUniversalRouter } from '../src/universal-router/interfaces/IUniversalRouter.sol';
@@ -33,6 +32,6 @@ contract UniversalRouterSwapScript is Script {
         UniversalRouter.simpleSwapEthForExactTokens(pk, GMX, 1e18);
         vm.stopBroadcast();
         uint256 ethAfter = me.balance;
-        console.log("Buy 1 GMX using %s ETH", ethBefore - ethAfter);
+        console2.log("Buy 1 GMX using %s ETH", ethBefore - ethAfter);
     }
 }

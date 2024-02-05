@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {Vm} from "forge-std/Vm.sol";
+import {Vm} from "hello-fs/Vm.sol";
 import {IAllowanceTransfer} from "../interfaces/IAllowanceTransfer.sol";
 
 library PermitSignature {

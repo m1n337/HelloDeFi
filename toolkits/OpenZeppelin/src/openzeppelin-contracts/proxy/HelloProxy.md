@@ -1,3 +1,7 @@
+# Proxy
+
+## Clones.sol
+
 > code: `openzeppelin-contracts/contracts/proxy/Clones.sol`
 > https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/proxy/Clones.sol
 

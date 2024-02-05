@@ -42,12 +42,15 @@ via_ir=true
 
 LIB_URLS = {
     "forge-std": "https://github.com/foundry-rs/forge-std",
-    "openzeppelin-contracts": "https://github.com/openzeppelin/openzeppelin-contracts"
+    "openzeppelin-contracts": "https://github.com/openzeppelin/openzeppelin-contracts",
+    "openzeppelin-contracts-upgradeable": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable"
 }
 
 DEFAULT_REMAPPINGS_PREFIX = {
     "forge-std": "src",
-    "evm-address": "src"
+    "evm-address": "src",
+    "openzeppelin-contracts": "contracts",
+    "openzeppelin-contracts-upgradeable": "contracts"
 }
 
 CHAIN_IDS = {
@@ -82,15 +85,16 @@ def generate_foundry_toml_file(rpc_endpoints=None, remappings=None, libs=[]):
     ft = Template(FOUNDRY_TOML_TEMPLATE)
     rpc_endpoints_field = ""
     remappings_field = ""
-    libs = [
-        f"\"{DEFAULT_LIB_PATH}\""
-    ]
+    
+    libs = [f"\"{DEFAULT_LIB_PATH}\""] + libs
+
     if rpc_endpoints:
         _rpc_endpoints = '\n'.join(rpc_endpoints)
         rpc_endpoints_field = f"\n[rpc_endpoints]\n{_rpc_endpoints}"
     if remappings:
         _remappings = ',\n'.join(f'"{item}"' for item in remappings)
         remappings_field = f"remappings = [\n{_remappings}\n]"
+
     libs = ', '.join(libs)
     return ft.substitute(libs=libs, rpc_endpoints_field=rpc_endpoints_field, remappings_field=remappings_field)
 
@@ -114,12 +118,19 @@ def init_config(path):
     remappings = {}
     with open(config_file_path, 'r') as f:
         cfg = json.load(f)
-        for d in cfg["dependencies"]:            
-            dep = d.split('@')
-            if len(dep) == 2:
-                [lib_name, version] = dep
-            elif len(dep) == 3:
-                [lib_name, _lib_url, version] = dep
+        for lib_name, info in cfg["dependencies"].items():
+            
+            # dep = d.split('@')
+            # if len(dep) == 2:
+            #     [lib_name, version] = dep
+            # elif len(dep) == 3:
+            #     [lib_name, _lib_url, version] = dep
+
+            try:
+                version = info['version']
+            except KeyError:
+                version = "latest"
+            
             print(f"[Check] dependency: {lib_name}@{version}")
             if version == "latest":
                 # check if the lib_name exist in the BASE_LIB_PATH
@@ -134,6 +145,7 @@ def init_config(path):
                 except KeyError:
                     try:
                         # try fetch library from github.com
+                        _lib_url = info['github']
                         lib_url = GITHUB_BASE_URL + _lib_url + ".git"
                         _install_library(lib_url, version, lib_path)
                     except Exception as e:
@@ -143,10 +155,17 @@ def init_config(path):
             
             try:
                 prefix = DEFAULT_REMAPPINGS_PREFIX[lib_name]
-                lib_path = lib_path / Path(prefix)
+                # lib_path = lib_path / Path(prefix)
+                lib_name = f"{lib_name}/{prefix}"
             except KeyError:
                 pass
-            remappings[lib_name] = lib_path
+
+            try:
+                lib_name = info['rename']
+            except KeyError:
+                pass
+            
+            remappings[lib_name] = (lib_path, prefix)
 
     return remappings
 
@@ -163,11 +182,13 @@ if __name__ == "__main__":
     remappings = init_config(repo_path)
 
     remappings_list = []
-    for lib_name, lib_path in remappings.items():
-        remappings_list.append(f"{lib_name}={lib_path}")
-    
+    libs_list = []
+    for lib_name, lib_path_pair in remappings.items():
+        remappings_list.append(f"{lib_name}={lib_path_pair[0] / lib_path_pair[1]}")
+        libs_list.append(f"\"{str(lib_path_pair[0])}\"")
+
     # write into the {repo_path}/foundry.toml
-    foundry_toml = generate_foundry_toml_file(rpc_endpoints=[], remappings=remappings_list)
+    foundry_toml = generate_foundry_toml_file(rpc_endpoints=[], remappings=remappings_list, libs=libs_list)
     with open(repo_path / Path("foundry.toml"), 'w') as f:
         f.write(foundry_toml)
     
