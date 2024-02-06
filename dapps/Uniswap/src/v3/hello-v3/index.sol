@@ -1,6 +1,9 @@
-import { PoolAddress } from './libraries/PoolAddress.sol';
-
+import {Test, console2} from "hello-fs/Test.sol";
 import {IERC20} from 'hello-oz/token/ERC20/IERC20.sol';
+
+import {WETH, USDT} from "evm-address/dapps/Tokens.sol";
+
+import { PoolAddress } from '../libraries/PoolAddress.sol';
 
 library UniswapV3 {
     address constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
@@ -40,5 +43,18 @@ library UniswapV3 {
         }
 
         return (_bestPool, _bestPoolFee);
+    }
+}
+
+
+contract HelloUniswapV3 is Test {
+    address weth = WETH.select();
+    address usdt = USDT.select();
+    
+    function setUp() public {}
+
+    function test_basic() public {
+        console2.log(weth);
+        console2.log(usdt);
     }
 }

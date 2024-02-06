@@ -1,7 +1,14 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.17;
+import {IERC20} from 'hello-oz/token/ERC20/IERC20.sol';
 
-import {IWETH9} from '../interfaces/external/IWETH9.sol';
+/// @title Interface for WETH9
+interface IWETH9 is IERC20 {
+    /// @notice Deposit ether to get wrapped ether
+    function deposit() external payable;
+
+    /// @notice Withdraw wrapped ether to get ether
+    function withdraw(uint256) external;
+}
+
 
 /// @title Constant state
 /// @notice Constant state used by the Universal Router

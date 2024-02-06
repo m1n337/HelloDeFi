@@ -50,7 +50,11 @@ DEFAULT_REMAPPINGS_PREFIX = {
     "forge-std": "src",
     "evm-address": "src",
     "openzeppelin-contracts": "contracts",
-    "openzeppelin-contracts-upgradeable": "contracts"
+    "openzeppelin-contracts-upgradeable": "contracts",
+    "uni-v3-core": "contracts",
+    "uni-v3-perpiphery": "contracts",
+    "uni-universal-router": "contracts",
+    "uni-permit2": "src"
 }
 
 CHAIN_IDS = {
@@ -112,6 +116,9 @@ def _install_library(lib_url, version, lib_path):
     execute_cmd(f"git clone --recurse-submodules {lib_url} {lib_path}")
     if version != "latest":
         execute_cmd(cmd=f"git checkout {version}", cwd=lib_path)
+    # if Path.exists(Path(lib_path) / Path('package.json')):
+        # TBD (node version switch)
+        # execute_cmd(cmd='npm install', cwd=lib_path)
 
 def init_config(path):
     config_file_path = Path(path) / Path("config.json")
