@@ -31,6 +31,7 @@ FOUNDRY_TOML_TEMPLATE = """
 [profile.default]
 src = "src"
 out = "out"
+test = "${test_dir_name}"
 libs = [${libs}]
 ${remappings_field}
 ignored_error_codes = ["license", "code-size"]
@@ -85,7 +86,7 @@ ANKR_PUBLIC_RPC = {
 def generate_rpc_endpoints():
     pass
 
-def generate_foundry_toml_file(rpc_endpoints=None, remappings=None, libs=[]):
+def generate_foundry_toml_file(repo_name, rpc_endpoints=None, remappings=None, libs=[]):
     ft = Template(FOUNDRY_TOML_TEMPLATE)
     rpc_endpoints_field = ""
     remappings_field = ""
@@ -100,7 +101,7 @@ def generate_foundry_toml_file(rpc_endpoints=None, remappings=None, libs=[]):
         remappings_field = f"remappings = [\n{_remappings}\n]"
 
     libs = ', '.join(libs)
-    return ft.substitute(libs=libs, rpc_endpoints_field=rpc_endpoints_field, remappings_field=remappings_field)
+    return ft.substitute(test_dir_name=repo_name, libs=libs, rpc_endpoints_field=rpc_endpoints_field, remappings_field=remappings_field)
 
 def generate_vscode_settings_file(remappings=None):
     settings_json = {}
@@ -185,6 +186,8 @@ if __name__ == "__main__":
     if not Path(repo_path).exists():
         print(f"[X] Repo {repo_path} not exist...")
         sys.exit(-1)
+    
+    test_dir_name = f"Hello{Path(repo_path).parts[-1]}"
 
     remappings = init_config(repo_path)
 
@@ -195,7 +198,7 @@ if __name__ == "__main__":
         libs_list.append(f"\"{str(lib_path_pair[0])}\"")
 
     # write into the {repo_path}/foundry.toml
-    foundry_toml = generate_foundry_toml_file(rpc_endpoints=[], remappings=remappings_list, libs=libs_list)
+    foundry_toml = generate_foundry_toml_file(test_dir_name, rpc_endpoints=[], remappings=remappings_list, libs=libs_list)
     with open(repo_path / Path("foundry.toml"), 'w') as f:
         f.write(foundry_toml)
     

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Script, console2} from "hello-fs/Script.sol";
 
 
-import { UniversalRouter } from '../src/universal-router/index.sol';
+import { UniversalRouter } from '../src/universal-router-plus/index.sol';
 import { IUniversalRouter } from '../src/universal-router/interfaces/IUniversalRouter.sol';
 
 contract UniversalRouterSwapScript is Script {

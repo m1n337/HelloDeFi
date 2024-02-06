@@ -4,16 +4,16 @@ import {Vm} from "hello-fs/Vm.sol";
 import {IERC20} from 'hello-oz/token/ERC20/IERC20.sol';
 import {SafeERC20} from 'hello-oz/token/ERC20/utils/SafeERC20.sol';
 
-import { Constants } from "../libraries/Constants.sol";
-import { Commands } from "../libraries/Commands.sol";
-import { IQuoterV2 } from '../../v3/interfaces/IQuoterV2.sol';
+import { Constants } from "../universal-router/libraries/Constants.sol";
+import { Commands } from "..//universal-router/libraries/Commands.sol";
+import { IQuoterV2 } from '../v3/interfaces/IQuoterV2.sol';
 
-import {IUniversalRouter} from "../interfaces/IUniversalRouter.sol";
+import {IUniversalRouter} from "../universal-router/interfaces/IUniversalRouter.sol";
 
-import { IAllowanceTransfer, IEIP712 } from "../../permit2/interfaces/IAllowanceTransfer.sol";
-import { PermitSignature } from "../../permit2/utils/PermitSignature.sol";
+import { IAllowanceTransfer, IEIP712 } from "../permit2/interfaces/IAllowanceTransfer.sol";
+import { PermitSignature } from "../permit2/utils/PermitSignature.sol";
 
-import { UniswapV3, PoolAddress } from "../../v3/hello-v3/index.sol";
+import { UniswapV3Plus, PoolAddress } from "../v3-plus/index.sol";
 
 library UniversalRouter {
     Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
@@ -68,7 +68,7 @@ library UniversalRouter {
         address tokenOut,
         uint256 amountOut
     ) internal {
-        (,uint24 fee) = UniswapV3.getPair(WETH, tokenOut);
+        (,uint24 fee) = UniswapV3Plus.getPair(WETH, tokenOut);
 
         uint256 amountInQuoted = quoteExactOutput(WETH, tokenOut, fee, amountOut);
         // Default slipplege: 0.5%
@@ -89,7 +89,7 @@ library UniversalRouter {
         address tokenOut,
         uint256 amountOut
     ) internal {
-        (,uint24 fee) = UniswapV3.getPair(tokenIn, tokenOut);
+        (,uint24 fee) = UniswapV3Plus.getPair(tokenIn, tokenOut);
         simpleSwapTokensForExactTokens(privateKey, tokenIn, tokenOut, fee, amountOut);
     }
 
@@ -391,34 +391,5 @@ contract UniversalRouterTest is Test {
         console2.log("[LOG] Alice buy 20 GMX using %s ETH", spendETH);
         console2.log("Remaining in router: ", ROUTER.balance);
         console2.log("Allowance for permit2: ", IERC20(WETH).allowance(alice, PERMIT2));
-    }
-}
-
-contract UniversalRouterSwapScript is Script {
-    using UniversalRouter for UniversalRouter.ExecuteParam;
-
-    address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
-
-    address constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
-    address constant GMX = 0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a;
-
-    address constant ROUTER = 0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD;
-    address constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-
-    address constant QUOTERV2 = 0x61fFE014bA17989E743c5F6cB21bF9697530B21e;
-
-    function run() public {
-        // uint256 pk = vm.envUint("PK");
-        uint256 pk = vm.envUint("PK");
-        address me = vm.addr(pk);
-
-        uint256 ethBefore = me.balance;
-        console2.log("[LOG] account = %s", me);
-        console2.log("balance = ", ethBefore);
-        vm.startBroadcast();
-        UniversalRouter.simpleSwapEthForExactTokens(pk, GMX, 1e18);
-        vm.stopBroadcast();
-        uint256 ethAfter = me.balance;
-        console2.log("Buy 1 GMX using %s ETH", ethBefore - ethAfter);
     }
 }

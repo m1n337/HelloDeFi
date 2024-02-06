@@ -1,12 +1,10 @@
-import {Test, console2} from "hello-fs/Test.sol";
 import {IERC20} from 'hello-oz/token/ERC20/IERC20.sol';
 
-import {WETH, USDT} from "evm-address/dapps/Tokens.sol";
+import {UniswapV3_Factory as Factory} from "evm-address/dapps/UniswapV3.sol";
 
-import { PoolAddress } from '../libraries/PoolAddress.sol';
+import { PoolAddress } from '../v3/libraries/PoolAddress.sol';
 
-library UniswapV3 {
-    address constant FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+library UniswapV3Plus {
 
     struct FeesTickSpacing {
         uint24 fee;
@@ -25,8 +23,13 @@ library UniswapV3 {
         fees[3] = FeesTickSpacing(10000, 200);
         return fees;
     }
-
+    
     function getPair(address _token0, address _token1) internal returns(address, uint24) {
+        address _factory = Factory.select();
+        return _getPair(_factory, _token0, _token1);
+    }
+
+    function _getPair(address _factory, address _token0, address _token1) internal returns(address, uint24) {
         FeesTickSpacing[] memory _fees = getFees();
 
         address _bestPool;
@@ -34,7 +37,7 @@ library UniswapV3 {
         uint256 _k;
         for (uint256 i; i < _fees.length; i++) {
             PoolAddress.PoolKey memory _pk = PoolAddress.getPoolKey(_token0, _token1, _fees[i].fee);
-            address _pair = PoolAddress.computeAddress(FACTORY, _pk);
+            address _pair = PoolAddress.computeAddress(_factory, _pk);
             uint256 _ck = IERC20(_token0).balanceOf(_pair) * IERC20(_token1).balanceOf(_pair);
             if (_ck <= _k) continue;
             _k = _ck;
@@ -43,18 +46,5 @@ library UniswapV3 {
         }
 
         return (_bestPool, _bestPoolFee);
-    }
-}
-
-
-contract HelloUniswapV3 is Test {
-    address weth = WETH.select();
-    address usdt = USDT.select();
-    
-    function setUp() public {}
-
-    function test_basic() public {
-        console2.log(weth);
-        console2.log(usdt);
     }
 }
