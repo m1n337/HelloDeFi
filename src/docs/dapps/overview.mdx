@@ -1,0 +1,15 @@
+---
+sidebar_position: 1
+title: Overview
+sidebar_label: Overview
+---
+
+import MyList from "@site/src/components/MyList";
+import { renderItem, columns, categories } from "./categories.table";
+
+<MyList
+  columns={ columns }
+  data={ categories }
+  subCompponentTitle="Dapps"
+  renderItem = { renderItem }
+/>

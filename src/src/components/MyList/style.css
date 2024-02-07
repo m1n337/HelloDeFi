@@ -1,0 +1,19 @@
+.my-list.left {
+    text-align: left;
+}
+  
+.my-list.fix {
+    width: 300px;
+    text-align: center;
+}
+
+.my-list.fix-long {
+    width: 650px;
+    text-align: center;
+}
+
+.my-list, .my-table.center {
+    font-size: 18px;
+    text-align: center;
+}
+  
