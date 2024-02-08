@@ -1,9 +1,10 @@
 import React from "react";
 import { Progress, Tree } from "antd";
-import { ExpandAltOutlined } from '@ant-design/icons';
+import { SmileOutlined, FireOutlined, LoadingOutlined } from '@ant-design/icons';
 import { grey } from '@ant-design/colors';
 import type { TreeDataNode, TreeProps } from 'antd';
 
+import Link from "@docusaurus/Link";
 
 enum NodeType {
     ROOT,
@@ -110,31 +111,58 @@ const getLearningStatusMetrics = (n: Node): LearningStatusMetrics => {
     return res;
 }
 
-const transformTreeData = (p: Node, n: Node): TreeDataNode => {
+const transformTreeData = (prefix: string, n: Node): TreeDataNode => {
 
-    let customTitle = <>{n.name}</>;
     let child = [];
     
+    let titleContents = [];
+
+    let key;
+    if (prefix === n.name) {
+        key = n.name;
+    } else {
+        key = `${prefix}/${n.name}`
+    }
+    
+    let customTitle = <><Link to={key}>{n.name}</Link></>;
+
     if (n.type !== NodeType.LEAF && (n as InnerNode).children.length > 0) {
         // const per = Math.floor(res.done * 100 / res.total);
         if (n.type === NodeType.ROOT) {
             const metrics = getLearningStatusMetrics(n);
             customTitle = <>
-                <span>{`${n.name}:`}</span>
+                {
+                    prefix === n.name 
+                    ? <span style={{
+                            fontWeight: "bold"
+                    }}> <Link to={key}>{n.name}</Link> </span> 
+                    : <span><Link to={key}>{`${n.name}:`}</Link></span> 
+                }
                 <span style={{marginLeft: 15}}>
                     <Progress percent={metrics.donePercent} steps={metrics.total} size={"small"} strokeColor={grey[2]} />
                 </span>
             </>
         }
-        child = (n as InnerNode).children.map(item => transformTreeData(n, item));
+        child = (n as InnerNode).children.map(item => transformTreeData(key, item));
+    }
+
+    if (n.type === NodeType.LEAF) {
+        let status;
+        switch ((n as LeafNode).status) {
+            case LearningStatus.Done:
+                status = <SmileOutlined />
+                break;
+            case LearningStatus.Doing:
+                status = <FireOutlined />
+                break;
+            case LearningStatus.Pending:
+                status = <LoadingOutlined />
+                break;
+        } 
+
+        customTitle = <><Link to={key}>{n.name}</Link> &nbsp; {status}</>
     }
     
-    let key;
-    if (p.name == n.name) {
-        key = n.name;
-    } else {
-        key = `${p.name}-${n.name}`
-    }
 
     return {
         title: customTitle,
@@ -155,7 +183,7 @@ export const transformData = (data): Node[] => {
 
 export const convertData = (data: Node[]): TreeDataNode[] => {
     return data.map(node => {
-        return transformTreeData(node, node);
+        return transformTreeData(node.name, node);
     });
 }
 
@@ -216,14 +244,17 @@ const LearningProgress = ({
 
     const onSelect: TreeProps['onSelect'] = (selectedKeys, info) => {
         console.log('selected', selectedKeys, info);
+        
+        
     };
 
     const root = convertData(data);
     
     return <>
-        <Progress percent={globalMetrics.donePercent} size="small" strokeColor={grey[2]} />
+        <Progress percent={globalMetrics.donePercent} size="small" strokeColor={grey[2]} showInfo={false} />
         <Tree
             showLine={true}
+            defaultExpandAll={true}
             onSelect={onSelect}
             treeData={root}
         />

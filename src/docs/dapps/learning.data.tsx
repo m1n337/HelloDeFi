@@ -1,4 +1,4 @@
-import {transformData, getGlobalLearningStatusMetrics, convertData} from "@site/src/components/LearningProgress";
+import {transformData} from "@site/src/components/LearningProgress";
 
 export const data = transformData([
     {
@@ -15,13 +15,13 @@ export const data = transformData([
                  }
              },
              "UniversalRouter": {
-                 "Router": "pending"
+                 "Router": "done"
              }
          }
     },
     {
          "1Inch": {
-             "v5": "pending"
+             "v5": "done"
          }
     }
 ]);
