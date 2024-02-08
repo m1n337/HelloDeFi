@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
-title: Overview
-sidebar_label: Overview
+title: Index
+sidebar_label: Index
 ---
 
 
@@ -16,6 +16,8 @@ import { renderItem, columns, categories } from "./categories.table";
   renderItem = { renderItem }
 /> -->
 
-## Uniswap
+import {MyProgress, repos} from "./dapps.data";
 
-### UniswapV3
+<MyProgress
+  data={ repos }
+/>
