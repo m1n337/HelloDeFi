@@ -28,14 +28,3 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
-
-details, details * {
-  background-color: transparent !important; /* 移除背景色 */
-  color: var(--text-color) !important; 
-  border-color: var(--text-color) !important;
-  text-decoration-color: transparent !important;
-}
-
-details > summary::before {
-  border-color: transparent !important;
-}
