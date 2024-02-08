@@ -1,3 +1,0 @@
-# Intro
-
-Hello from Toolkits

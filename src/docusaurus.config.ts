@@ -2,6 +2,10 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+
+
 const config: Config = {
   title: 'Hello DeFi',
   favicon: 'img/favicon.ico',
@@ -28,12 +32,17 @@ const config: Config = {
     locales: ['en'],
   },
 
+  themes: ['@docusaurus/theme-live-codeblock'],
+
   presets: [
     [
       'classic',
       {
         docs: {
+          path: 'docs',
           sidebarPath: './sidebars.ts',
+          remarkPlugins: [remarkMath],
+          rehypePlugins: [rehypeKatex],
         },
         blog: false,
         theme: {
@@ -83,6 +92,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
+      additionalLanguages: ['solidity']
     },
   } satisfies Preset.ThemeConfig,
 };

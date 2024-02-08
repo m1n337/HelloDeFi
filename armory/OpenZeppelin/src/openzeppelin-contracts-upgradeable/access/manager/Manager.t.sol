@@ -5,8 +5,7 @@ import { AccessManagedUpgradeable } from "hello-uoz/access/manager/AccessManaged
 import {ERC1967Proxy} from "hello-oz/proxy/ERC1967/ERC1967Proxy.sol";
 import {AccessManager} from "hello-oz/access/manager/AccessManager.sol";
 
-
-contract HelloManager is AccessManagedUpgradeable {
+contract HelloAccessManager is AccessManagedUpgradeable {
     bool public isPaused;
     function initialize(
         address _authority
@@ -40,7 +39,7 @@ contract HelloManager is AccessManagedUpgradeable {
 }
 
 contract HelloManagerTest is Test {
-    HelloManager proxy;
+    HelloAccessManager proxy;
     address HelloManagerImpl;
     AccessManager manager;
 
@@ -50,10 +49,10 @@ contract HelloManagerTest is Test {
         DEV = makeAddr("DEV");
         vm.startPrank(DEV);
 
-        HelloManagerImpl = address(new HelloManager());
+        HelloManagerImpl = address(new HelloAccessManager());
         manager = new AccessManager(DEV);
 
-        proxy = HelloManager(address(new ERC1967Proxy(HelloManagerImpl, abi.encodeWithSelector(HelloManager.initialize.selector, address(manager)))));
+        proxy = HelloAccessManager(address(new ERC1967Proxy(HelloManagerImpl, abi.encodeWithSelector(HelloAccessManager.initialize.selector, address(manager)))));
         
         vm.stopPrank();
     }
@@ -78,17 +77,17 @@ contract HelloManagerTest is Test {
 
         console2.log("DEV --> manager.setTargetFunctionRole(address(proxy), [HelloManager.play.selector], PUBLIC_ROLE)");
         bytes4[] memory ss = new bytes4[](1);
-        ss[0] = HelloManager.play.selector;
+        ss[0] = HelloAccessManager.play.selector;
         vm.prank(DEV);
         manager.setTargetFunctionRole(address(proxy), ss, PUBLIC_ROLE);
         
         console2.log("DEV --> manager.setTargetFunctionRole(address(proxy), [HelloManager.specialPlay.selector], PLAYER_VIP)");
-        ss[0] = HelloManager.specialPlay.selector;
+        ss[0] = HelloAccessManager.specialPlay.selector;
         vm.prank(DEV);
         manager.setTargetFunctionRole(address(proxy), ss, PLAYER_VIP);
         
         console2.log("DEV --> manager.setTargetFunctionRole(address(proxy), [HelloManager.removePlayer.selector], PLAYER_MANAGER)");
-        ss[0] = HelloManager.removePlayer.selector;
+        ss[0] = HelloAccessManager.removePlayer.selector;
         vm.prank(DEV);
         manager.setTargetFunctionRole(address(proxy), ss, PLAYER_MANAGER);
         
@@ -178,7 +177,7 @@ contract HelloManagerTest is Test {
         console2.log("Open the `play` function for PUBLIC_ROLE...");
         console2.log("DEV --> manager.setTargetFunctionRole(address(proxy), ss, type(uint64).max)");
         bytes4[] memory ss = new bytes4[](1);
-        ss[0] = HelloManager.play.selector;
+        ss[0] = HelloAccessManager.play.selector;
         vm.prank(DEV);
         manager.setTargetFunctionRole(address(proxy), ss, type(uint64).max);
 

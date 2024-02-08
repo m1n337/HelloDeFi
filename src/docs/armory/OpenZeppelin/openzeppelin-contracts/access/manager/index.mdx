@@ -1,0 +1,139 @@
+# Manager
+
+
+The `AccessManager` contract serves as a pivotal gatekeeper, playing a crucial role in access control within the system. All contracts inheriting from the `AccessManaged` contract can specify an `AccessManager` and use the `restricted` modifier to enforce access control on certain functions.
+
+The `restricted` modifier query the state of the `AccessManager` contract to determine whether the caller has the necessary privileges to execute the function it protects.
+
+- TBD
+Additionally, the `AccessManager` contract can incorporate a scheduling feature, allowing certain roles to perform operations after a specified delay.
+
+## AuthorityUtils.sol
+
+:::info
+code: [`openzeppelin-contracts/contracts/access/manager/AuthorityUtils.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/access/manager/AuthorityUtils.sol)
+:::
+
+- **function canCallWithDelay**: authority.canCall(caller, target, selector) -> (immediate, dealy)
+
+```solidity
+/**
+* @dev Since `AccessManager` implements an extended IAuthority interface, invoking `canCall` with backwards compatibility
+* for the preexisting `IAuthority` interface requires special care to avoid reverting on insufficient return data.
+* This helper function takes care of invoking `canCall` in a backwards compatible way without reverting.
+*/
+function canCallWithDelay(
+    address authority,
+    address caller,
+    address target,
+    bytes4 selector
+) internal view returns (bool immediate, uint32 delay) {
+    (bool success, bytes memory data) = authority.staticcall(
+        abi.encodeCall(IAuthority.canCall, (caller, target, selector))
+    );
+    if (success) {
+        if (data.length >= 0x40) {
+            (immediate, delay) = abi.decode(data, (bool, uint32));
+        } else if (data.length >= 0x20) {
+            immediate = abi.decode(data, (bool));
+        }
+    }
+    return (immediate, delay);
+}
+```
+
+## AccessManaged.sol
+
+:::info
+code: [`openzeppelin-contracts/contracts/access/manager/AccessManaged.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/access/manager/AccessManaged.sol)
+:::
+
+1. Provide the `restricted` modifier
+2. Allow `AccessManager` contract invoke the `setAuthority` function to update current `_authority`.
+
+- **modifier restricted:**
+
+```solidity
+modifier restricted() {
+    _checkCanCall(_msgSender(), _msgData());
+    _;
+}
+```
+
+```solidity showLineNumbers
+function _checkCanCall(address caller, bytes calldata data) internal virtual {
+    (bool immediate, uint32 delay) = AuthorityUtils.canCallWithDelay(
+        authority(),
+        caller,
+        address(this),
+        bytes4(data[0:4])
+    );
+    if (!immediate) {
+        if (delay > 0) {
+            _consumingSchedule = true;
+            IAccessManager(authority()).consumeScheduledOp(caller, data);
+            _consumingSchedule = false;
+        } else {
+            revert AccessManagedUnauthorized(caller);
+        }
+    }
+}
+```
+
+Possible scenarios for a caller to invoke a restricted function:
+
+1. `immediate = false AND dealy = 0`: Unauthorized caller.
+2. `immediate = false && delay > 0`: Privileged caller but need time delay
+3. `immediate = true`: Privileged caller can execute the function immediately
+
+
+Q-1: Why can not be used by internal functions?
+```text
+* [IMPORTANT]
+* ====
+* In general, this modifier should only be used on `external` functions. It is okay to use it on `public`
+* functions that are used as external entry points and are not called internally. Unless you know what you're
+* doing, it should never be used on `internal` functions. Failure to follow these rules can have critical security
+* implications! This is because the permissions are determined by the function that entered the contract, i.e. the
+* function at the bottom of the call stack, and not the function where the modifier is visible in the source code.
+* ====
+```
+
+Q-2: Why can not be used by receive function?
+
+```text
+* [WARNING]
+* ====
+* Avoid adding this modifier to the https://docs.soliditylang.org/en/v0.8.20/contracts.html#receive-ether-function[`receive()`]
+* function or the https://docs.soliditylang.org/en/v0.8.20/contracts.html#fallback-function[`fallback()`]. These
+* functions are the only execution paths where a function selector cannot be unambiguosly determined from the calldata
+* since the selector defaults to `0x00000000` in the `receive()` function and similarly in the `fallback()` function
+* if no calldata is provided. (See {_checkCanCall}).
+*
+* The `receive()` function will always panic whereas the `fallback()` may panic depending on the calldata length.
+* ====
+```
+
+- **function setAuthority:**
+
+```solidity
+/// @inheritdoc IAccessManaged
+function setAuthority(address newAuthority) public virtual {
+    address caller = _msgSender();
+    if (caller != authority()) {
+        revert AccessManagedUnauthorized(caller);
+    }
+    if (newAuthority.code.length == 0) {
+        revert AccessManagedInvalidAuthority(newAuthority);
+    }
+    _setAuthority(newAuthority);
+}
+```
+
+## AccessManager.sol
+
+:::info
+code: [`openzeppelin-contracts/contracts/access/manager/AccessManager.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/access/manager/AccessManager.sol)
+:::
+
+

@@ -1,30 +1,42 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Manager
 
-## AccessManagedUpgradable
+## AccessManagedUpgradable.sol
 
-> code: `openzeppelin-contracts-upgradable/contracts/access/manager/AccessManagedUpgradeable.sol`
-> https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/access/manager/AccessManagedUpgradeable.sol
+:::info
+code: [`openzeppelin-contracts-upgradable/contracts/access/manager/AccessManagedUpgradeable.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v5.0.1/contracts/access/manager/AccessManagedUpgradeable.sol)
+:::
 
 - `restricted`:
+    
     [JUMP] _checkCanCall(_msgSender(), _msgData())
 
 - `_checkCanCall(caller, data)`
+    
     [STATICCALL] authority.canCall(caller, address(this), selector)
+    
     [PASS 1] !immediate + deplay > 0 -> authority.consumeScheduledOp(caller, data)
+    
     [PASS 2] immediate
 
+## AccessManagerUpgradeable.sol
 
-## AccessManagerUpgradeable
-
-> code: `openzeppelin-contracts-upgradable/contracts/access/manager/AccessManagerUpgradeable.sol`
-> https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/access/manager/AccessManagerUpgradeable.sol
+:::info
+code: [`openzeppelin-contracts-upgradable/contracts/access/manager/AccessManagerUpgradeable.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/access/manager/AccessManagerUpgradeable.sol)
+:::
 
 ADMIN_ROLE = 0
+
 PUBLIC_ROLE = type(uint64).max
 
 TargetConfig:
+
     mapping: selector => roleId
+
     Time.Delay adminDelay
+    
     bool closed
 
 _targets: mapping(address => TargetConfig)
@@ -96,7 +108,7 @@ _targets: mapping(address => TargetConfig)
 Rule 1: every address is member of the `PUBLIC_ROLE`
 Rule 2: every target function is restricted to the `ADMIN_ROLE`
 
-* * A role's admin role via {setRoleAdmin} who can grant or revoke roles.
+<!-- * * A role's admin role via {setRoleAdmin} who can grant or revoke roles.
 * * A role's guardian role via {setRoleGuardian} who's allowed to cancel operations.
 * * A delay in which a role takes effect after being granted through {setGrantDelay}.
 * * A delay of any target's admin action via {setTargetAdminDelay}.
@@ -105,4 +117,4 @@ Rule 2: every target function is restricted to the `ADMIN_ROLE`
 
  * NOTE: This contract implements a form of the {IAuthority} interface, but {canCall} has additional return data so it
  * doesn't inherit `IAuthority`. It is however compatible with the `IAuthority` interface since the first 32 bytes of
- * the return data are a boolean as expected by that interface.
+ * the return data are a boolean as expected by that interface. -->
