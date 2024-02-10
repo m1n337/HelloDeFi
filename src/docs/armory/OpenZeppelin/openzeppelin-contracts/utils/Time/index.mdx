@@ -1,0 +1,176 @@
+# Time
+
+The `Time` library facilitates operations related to the "time delay", the mainly functions can be summary as: 
+
+1. Access blockchain's time information: 
+    
+    - **`timestamp()`:** retrieve the current timestamp
+
+    - **`blockNumber()`:** retrieve the current block number
+
+2. Manage the time delay (the `Delay` type):
+
+    2.1 create a `Delay` type with **`pack(valueBefore,valueAfter,effect)`** and **`toDelay(duration)`** functions
+
+    2.2 extract information from a time delay through **`unpack(self)->(valueBefore,valueAfter,effect)`**, **`getFull(self)->(valueBefore,valueAfter,effect)`**, and **`get(self)->delay`**
+
+    2.3 **`withUpdate(self,newValue,minSetback)->(updatedDelay,effect)`:** update the time delay
+    
+
+## Access blockchain time information
+
+:::info
+run test: `armory/OpenZeppelin$ forge test --mt test_access_time_info -vv`
+:::
+
+## Manage the time delay (the `Delay` type):
+
+```solidity showLineNumbers
+/**
+* @dev A `Delay` is a uint32 duration that can be programmed to change value automatically at a given point in the
+* future. The "effect" timepoint describes when the transitions happens from the "old" value to the "new" value.
+* This allows updating the delay applied to some operation while keeping some guarantees.
+*
+* In particular, the {update} function guarantees that if the delay is reduced, the old delay still applies for
+* some time. For example if the delay is currently 7 days to do an upgrade, the admin should not be able to set
+* the delay to 0 and upgrade immediately. If the admin wants to reduce the delay, the old delay (7 days) should
+* still apply for some time.
+*
+*
+* The `Delay` type is 112 bits long, and packs the following:
+*
+* ```
+*   | [uint48]: effect date (timepoint)
+*   |           | [uint32]: value before (duration)
+*   ↓           ↓       ↓ [uint32]: value after (duration)
+* 0xAAAAAAAAAAAABBBBBBBBCCCCCCCC
+* ```
+*
+* NOTE: The {get} and {withUpdate} functions operate using timestamps. Block number based delays are not currently
+* supported.
+*/
+type Delay is uint112;
+```
+
+The `Delay` type is an alias for the native `uint112` type, structured into three distinct parts: `effect` (on Line 15), `value before` (on Line 16), `value after` (on Line 17).
+
+- `effect` (uint48): specifies the timepoint when the pending delay duration (i.e. `value after`) becomes active
+- `value before` (uint32): records the current active delay duration
+- `value after` (uint32): represents the pending delay duration set to activate until the effect timepoint
+
+To gain a deeper insight into the underlying design and motivations behind the `Delay` type, it's beneficial to delve into the processes of its **instantiation**, **access mechanisms**, **updates**, and, most importantly, its **application in real-world projects**.
+
+### Instantiation: `pack`, `toDelay`
+
+- **function pack(valueBefore,valueAfter,effect)**: packages `effect ++ valueBefore ++ valueAfter` components into a single, coherent `Delay` type
+
+:::tip
+**Thinking**: why `valueAfter` is placed at the end?
+:::
+
+- **function toDelay(duration):**
+
+The `toDelay` function only accepts a duration (uint32) parameter and directly convert it to a `Delay` type through the build-in `wrap` method.
+
+Since the **left-padding** nature of the `wrap` function, the `duration` is placed at the end (i.e. the `value after` field).
+
+The placement of `value after` at the end is deliberate; due to the `wrap` function, each duration set defaults to be a pending delay duration, awaiting activation until the `effect` timepoint.
+
+:::note
+**Rule:** the `toDelay` function creates a 'delay' to 'pending' status by default, but it takes effect due to the effect is ZERO.
+:::
+
+:::info
+run test: `armory/OpenZeppelin$ forge test --mt test_time_delay_instantiation -vv`
+:::
+
+### Extract the delay information: `getFull`, `get`, `unpack`
+
+
+- **function getFull()->(valueBefore,valueAfter,effect):**
+
+After the effective time has passed (i.e., when `effect <= timestamp()`), the pending delay duration transitions to the current delay duration, resulting in a return value of `(valueAfter, 0, 0)`.
+
+Otherwise, it simply returns `(valueBefore, valueAfter, effect)`.
+
+```solidity
+/**
+* @dev Get the value at a given timepoint plus the pending value and effect timepoint if there is a scheduled
+* change after this timepoint. If the effect timepoint is 0, then the pending value should not be considered.
+*/
+function _getFullAt(Delay self, uint48 timepoint) private pure returns (uint32, uint32, uint48) {
+   (uint32 valueBefore, uint32 valueAfter, uint48 effect) = self.unpack();
+   return effect <= timepoint ? (valueAfter, 0, 0) : (valueBefore, valueAfter, effect);
+}
+
+/**
+* @dev Get the current value plus the pending value and effect timepoint if there is a scheduled change. If the
+* effect timepoint is 0, then the pending value should not be considered.
+*/
+function getFull(Delay self) internal view returns (uint32, uint32, uint48) {
+   return _getFullAt(self, timestamp());
+}
+```
+
+- **function get()->delay:** call the `_getFull` function and return the current delay duration (i.e. `valueBefore`).
+
+```solidity
+function get(Delay self) internal view returns (uint32) {
+    (uint32 delay, , ) = self.getFull();
+    return delay;
+}
+```
+
+- **function unpack()->(valueBefore,valueAfter,delay):** unpack the delay to reveal and return its underlying fields.
+
+```solidity
+function unpack(Delay self) internal pure returns (uint32 valueBefore, uint32 valueAfter, uint48 effect) {
+    uint112 raw = Delay.unwrap(self);
+
+    valueAfter = uint32(raw);
+    valueBefore = uint32(raw >> 32);
+    effect = uint48(raw >> 64);
+
+    return (valueBefore, valueAfter, effect);
+}
+```
+
+### Update the time delay: `withUpdate`
+
+- **function withUpdate(self,newValue,minSetback)->(updatedDelay,effect):**
+
+The `minSetback` is utilized to limit the effect time for the new delay duration (i.e. `newValue`).
+
+The updating for the `valueBefore` and `valueAfter` fileds of the `updatedDelay` is straightforward.
+The current delay duration (returned from the `self.get()`) is updated to the `beforeValue` and the new delay duration (i.e. `newValue`) is updated to the `valueAfter`.
+
+The challenging part is understanding the update and calculation of `effect`: $\max{(minSetback, \max{(delay-newDelay, 0)})}$ 
+
+Using $\max{(delay-newDelay, 0)}$ ensures a safe time buffer, indicating that **the new delay duration will not take effect until the old delay duration has fully expired**.
+
+Additionally, the `minSetback` serves as another adjustable time buffer. It permits the caller to specify an **extended effective period**, **preventing the new delay duration from becoming active too soon**.
+
+This design allows for greater control over timing transitions, **ensuring that changes occur neither abruptly nor unexpectedly**.
+
+
+```solidity
+function withUpdate(
+    Delay self,
+    uint32 newValue,
+    uint32 minSetback
+) internal view returns (Delay updatedDelay, uint48 effect) {
+    uint32 value = self.get();
+    uint32 setback = uint32(Math.max(minSetback, value > newValue ? value - newValue : 0));
+    effect = timestamp() + setback;
+    return (pack(value, newValue, effect), effect);
+}
+```
+
+:::info
+run test: `armory/OpenZeppelin$ forge test --mt test_updates_time_delay -vv`
+:::
+
+## Real world application
+
+A practical example of the Time library's application is evident in OpenZeppelin's AccessManager module.
+

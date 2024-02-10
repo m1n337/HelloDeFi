@@ -1,3 +1,2 @@
 # Uniswap
 
-- [ ] UniswapV3

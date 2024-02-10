@@ -137,3 +137,189 @@ code: [`openzeppelin-contracts/contracts/access/manager/AccessManager.sol`](http
 :::
 
 
+| Function Name | Sighash    | Function Signature | 
+| ------------- | ---------- | ------------------ | 
+| canCall | b7009613 | canCall(address,address,bytes4) |
+| expiration | 4665096d | expiration() |
+| minSetback | cc1b6c81 | minSetback() |
+| isTargetClosed | a166aa89 | isTargetClosed(address) |
+| getTargetFunctionRole | 6d5115bd | getTargetFunctionRole(address,bytes4) |
+| getTargetAdminDelay | 4c1da1e2 | getTargetAdminDelay(address) |
+| getRoleAdmin | 530dd456 | getRoleAdmin(uint64) |
+| getRoleGuardian | 0b0a93ba | getRoleGuardian(uint64) |
+| getRoleGrantDelay | 12be8727 | getRoleGrantDelay(uint64) |
+
+| getAccess | 3078f114 | getAccess(uint64,address) |
+| hasRole | d1f856ee | hasRole(uint64,address) |
+| labelRole | 853551b8 | labelRole(uint64,string) |
+| grantRole | 25c471a0 | grantRole(uint64,address,uint32) |
+| revokeRole | b7d2b162 | revokeRole(uint64,address) |
+| renounceRole | fe0776f5 | renounceRole(uint64,address) |
+| setRoleAdmin | 30cae187 | setRoleAdmin(uint64,uint64) |
+| setRoleGuardian | 52962952 | setRoleGuardian(uint64,uint64) |
+| setGrantDelay | a64d95ce | setGrantDelay(uint64,uint32) |
+| setTargetFunctionRole | 08d6122d | setTargetFunctionRole(address,bytes4[],uint64) |
+
+| |
+
+| getSchedule | 3adc277a | getSchedule(bytes32) |
+| getNonce | 4136a33c | getNonce(bytes32) |
+| schedule | f801a698 | schedule(address,bytes,uint48) |
+| execute | 1cff79cd | execute(address,bytes) |
+| cancel | d6bb62c6 | cancel(address,address,bytes) |
+| consumeScheduledOp | 94c7d7ee | consumeScheduledOp(address,bytes) |
+| hashOperation | abd9bd2a | hashOperation(address,address,bytes) |
+
+| updateAuthority | 18ff183c | updateAuthority(address,address) |
+
+
+- onlyAuthorized
+- [x] setTargetAdminDelay(address target, uint32 newDelay)
+- [x] setTargetClosed(address target, bool closed) 
+
+
+- **function onlyAuthorized:**
+
+```solidity
+modifier onlyAuthorized() {
+    _checkAuthorized();
+    _;
+}
+```
+
+```solidity
+function _checkAuthorized() private {
+    address caller = _msgSender();
+    (bool immediate, uint32 delay) = _canCallSelf(caller, _msgData());
+    if (!immediate) {
+        if (delay == 0) {
+            (, uint64 requiredRole, ) = _getAdminRestrictions(_msgData());
+            revert AccessManagerUnauthorizedAccount(caller, requiredRole);
+        } else {
+            _consumeScheduledOp(hashOperation(caller, address(this), _msgData()));
+        }
+    }
+}
+```
+
+```solidity
+function _canCallSelf(address caller, bytes calldata data) private view returns (bool immediate, uint32 delay) {
+    if (data.length < 4) {
+        return (false, 0);
+    }
+
+    if (caller == address(this)) {
+        // Caller is AccessManager, this means the call was sent through {execute} and it already checked
+        // permissions. We verify that the call "identifier", which is set during {execute}, is correct.
+        return (_isExecuting(address(this), _checkSelector(data)), 0);
+    }
+
+    (bool enabled, uint64 roleId, uint32 operationDelay) = _getAdminRestrictions(data);
+    if (!enabled) {
+        return (false, 0);
+    }
+
+    (bool inRole, uint32 executionDelay) = hasRole(roleId, caller);
+    if (!inRole) {
+        return (false, 0);
+    }
+
+    // downcast is safe because both options are uint32
+    delay = uint32(Math.max(operationDelay, executionDelay));
+    return (delay == 0, delay);
+}
+```
+
+- Point: The delay is max(operationDelay, executionDelay) _# operationDelay (i.e. from `_getAdminRestrictions`), executionDelay (i.e. from `hasRole`)_
+
+
+```solidity
+/**
+* @dev Get the admin restrictions of a given function call based on the function and arguments involved.
+*
+* Returns:
+* - bool restricted: does this data match a restricted operation
+* - uint64: which role is this operation restricted to
+* - uint32: minimum delay to enforce for that operation (max between operation's delay and admin's execution delay)
+*/
+function _getAdminRestrictions(
+   bytes calldata data
+) private view returns (bool restricted, uint64 roleAdminId, uint32 executionDelay) {
+   if (data.length < 4) {
+       return (false, 0, 0);
+   }
+
+   bytes4 selector = _checkSelector(data);
+
+   // Restricted to ADMIN with no delay beside any execution delay the caller may have
+   if (
+       selector == this.labelRole.selector ||
+       selector == this.setRoleAdmin.selector ||
+       selector == this.setRoleGuardian.selector ||
+       selector == this.setGrantDelay.selector ||
+       selector == this.setTargetAdminDelay.selector
+   ) {
+       return (true, ADMIN_ROLE, 0);
+   }
+
+   // Restricted to ADMIN with the admin delay corresponding to the target
+   if (
+       selector == this.updateAuthority.selector ||
+       selector == this.setTargetClosed.selector ||
+       selector == this.setTargetFunctionRole.selector
+   ) {
+       // First argument is a target.
+       address target = abi.decode(data[0x04:0x24], (address));
+       uint32 delay = getTargetAdminDelay(target);
+       return (true, ADMIN_ROLE, delay);
+   }
+
+   // Restricted to that role's admin with no delay beside any execution delay the caller may have.
+   if (selector == this.grantRole.selector || selector == this.revokeRole.selector) {
+       // First argument is a roleId.
+       uint64 roleId = abi.decode(data[0x04:0x24], (uint64));
+       return (true, getRoleAdmin(roleId), 0);
+   }
+
+   return (false, 0, 0);
+}
+```
+| selector | restricted | role | delay |
+|---|---|---|---|
+| `labelRole` `setRoleAdmin` `setRoleGuardian` `setGrantDelay` `setTargetAdminDelay` | true | ADMIN_ROLE  | 0 |
+|   `updateAuthority` `setTargetClosed` `setTargetFunctionRole` | true | ADMIN_ROLE | getTargetAdminDelay(target) |
+|   `grantRole` `revokeRole`    | true | getRoleAdmin(roleId)   | 0 |
+
+
+- **function grantRole:**
+
+```solidity
+function _grantRole(
+    uint64 roleId,
+    address account,
+    uint32 grantDelay,
+    uint32 executionDelay
+) internal virtual returns (bool) {
+    if (roleId == PUBLIC_ROLE) {
+        revert AccessManagerLockedRole(roleId);
+    }
+
+    bool newMember = _roles[roleId].members[account].since == 0;
+    uint48 since;
+
+    if (newMember) {
+        since = Time.timestamp() + grantDelay;
+        _roles[roleId].members[account] = Access({since: since, delay: executionDelay.toDelay()});
+    } else {
+        // No setback here. Value can be reset by doing revoke + grant, effectively allowing the admin to perform
+        // any change to the execution delay within the duration of the role admin delay.
+        (_roles[roleId].members[account].delay, since) = _roles[roleId].members[account].delay.withUpdate(
+            executionDelay,
+            0
+        );
+    }
+
+    emit RoleGranted(roleId, account, executionDelay, since, newMember);
+    return newMember;
+}
+```

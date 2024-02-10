@@ -14,7 +14,10 @@ export const data = transformData([
                 "manager": "doing"
               },
               "proxy": {
-                  "Clonses.sol": "done"
+                  "Clones": "done"
+              },
+              "utils": {
+                "Time": "doing"
               }
             },
             "openzeppelin-upgradeable": {
