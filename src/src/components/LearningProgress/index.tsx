@@ -237,7 +237,7 @@ class LearningStatusMetrics implements LearningStatusMetricsI {
 const LearningProgress = ({
     data
 }: {
-    data: Node[],
+    data: Node[];
 }) => {
 
     const globalMetrics = getGlobalLearningStatusMetrics(data);

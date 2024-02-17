@@ -43,3 +43,8 @@ details > summary::before {
 a {
   color: inherit; /* 或者是你想要的任何颜色 */
 }
+
+.h-svg {
+  width: 100%;
+  height: 100%;
+}

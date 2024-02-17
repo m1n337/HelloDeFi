@@ -1,12 +1,14 @@
 # Manager
 
+<!-- ![overview](./statics/overview.png) -->
 
-The `AccessManager` contract serves as a pivotal gatekeeper, playing a crucial role in access control within the system. All contracts inheriting from the `AccessManaged` contract can specify an `AccessManager` and use the `restricted` modifier to enforce access control on certain functions.
+import AccessManagerOverview from "./statics/AccessManagerOverview.svg";
+
+<AccessManagerOverview className="h-svg" />
+
+The `AccessManager` contract serves as a pivotal gatekeeper. All contracts inheriting from the `AccessManaged` contract can specify an `AccessManager` and use the `restricted` modifier to enforce access control on certain functions.
 
 The `restricted` modifier query the state of the `AccessManager` contract to determine whether the caller has the necessary privileges to execute the function it protects.
-
-- TBD
-Additionally, the `AccessManager` contract can incorporate a scheduling feature, allowing certain roles to perform operations after a specified delay.
 
 ## AuthorityUtils.sol
 
@@ -49,6 +51,7 @@ code: [`openzeppelin-contracts/contracts/access/manager/AccessManaged.sol`](http
 :::
 
 1. Provide the `restricted` modifier
+
 2. Allow `AccessManager` contract invoke the `setAuthority` function to update current `_authority`.
 
 - **modifier restricted:**
@@ -137,46 +140,89 @@ code: [`openzeppelin-contracts/contracts/access/manager/AccessManager.sol`](http
 :::
 
 
-| Function Name | Sighash    | Function Signature | 
-| ------------- | ---------- | ------------------ | 
-| canCall | b7009613 | canCall(address,address,bytes4) |
-| expiration | 4665096d | expiration() |
-| minSetback | cc1b6c81 | minSetback() |
-| isTargetClosed | a166aa89 | isTargetClosed(address) |
-| getTargetFunctionRole | 6d5115bd | getTargetFunctionRole(address,bytes4) |
-| getTargetAdminDelay | 4c1da1e2 | getTargetAdminDelay(address) |
-| getRoleAdmin | 530dd456 | getRoleAdmin(uint64) |
-| getRoleGuardian | 0b0a93ba | getRoleGuardian(uint64) |
-| getRoleGrantDelay | 12be8727 | getRoleGrantDelay(uint64) |
+The `AccessManager` contract could be summarized into two primary modules: **the Role Management module** and **the Timelock Executor module**. 
 
-| getAccess | 3078f114 | getAccess(uint64,address) |
-| hasRole | d1f856ee | hasRole(uint64,address) |
-| labelRole | 853551b8 | labelRole(uint64,string) |
-| grantRole | 25c471a0 | grantRole(uint64,address,uint32) |
-| revokeRole | b7d2b162 | revokeRole(uint64,address) |
-| renounceRole | fe0776f5 | renounceRole(uint64,address) |
-| setRoleAdmin | 30cae187 | setRoleAdmin(uint64,uint64) |
-| setRoleGuardian | 52962952 | setRoleGuardian(uint64,uint64) |
-| setGrantDelay | a64d95ce | setGrantDelay(uint64,uint32) |
-| setTargetFunctionRole | 08d6122d | setTargetFunctionRole(address,bytes4[],uint64) |
+The Role Management module not only offers **fine-grained access control** (at the function level, i.e. the `restricted` modifier) for all "AccessManaged" associated with `AccessManager`, but also implements its own access control mechanism for maintaining those roles and access control configurations.
 
-| |
+The Timelock Executor module provides functionalities such as **scheduling operations with delays**, **canceling** them, and **executing activated operations** through external function calls. 
+It also introduces **time-delayed access control**. This feature restricts certain functions to be called by their designated roles only after being scheduled in the `AccessManager` contract and undergoing a waiting period until activation.
 
-| getSchedule | 3adc277a | getSchedule(bytes32) |
-| getNonce | 4136a33c | getNonce(bytes32) |
-| schedule | f801a698 | schedule(address,bytes,uint48) |
-| execute | 1cff79cd | execute(address,bytes) |
-| cancel | d6bb62c6 | cancel(address,address,bytes) |
-| consumeScheduledOp | 94c7d7ee | consumeScheduledOp(address,bytes) |
-| hashOperation | abd9bd2a | hashOperation(address,address,bytes) |
+<details>
+    <summary>**Cheat Sheet**</summary>
 
-| updateAuthority | 18ff183c | updateAuthority(address,address) |
+    | Function Name | Sighash    | Function Signature | 
+    | ------------- | ---------- | ------------------ | 
+    | canCall | b7009613 | canCall(address,address,bytes4) |
+    | expiration | 4665096d | expiration() |
+    | minSetback | cc1b6c81 | minSetback() |
+    | isTargetClosed | a166aa89 | isTargetClosed(address) |
+    | getTargetFunctionRole | 6d5115bd | getTargetFunctionRole(address,bytes4) |
+    | getTargetAdminDelay | 4c1da1e2 | getTargetAdminDelay(address) |
+    | getRoleAdmin | 530dd456 | getRoleAdmin(uint64) |
+    | getRoleGuardian | 0b0a93ba | getRoleGuardian(uint64) |
+    | getRoleGrantDelay | 12be8727 | getRoleGrantDelay(uint64) |
 
+    | getAccess | 3078f114 | getAccess(uint64,address) |
+    | hasRole | d1f856ee | hasRole(uint64,address) |
+    | labelRole | 853551b8 | labelRole(uint64,string) |
+    | grantRole | 25c471a0 | grantRole(uint64,address,uint32) |
+    | revokeRole | b7d2b162 | revokeRole(uint64,address) |
+    | renounceRole | fe0776f5 | renounceRole(uint64,address) |
+    | setRoleAdmin | 30cae187 | setRoleAdmin(uint64,uint64) |
+    | setRoleGuardian | 52962952 | setRoleGuardian(uint64,uint64) |
+    | setGrantDelay | a64d95ce | setGrantDelay(uint64,uint32) |
+    | setTargetFunctionRole | 08d6122d | setTargetFunctionRole(address,bytes4[],uint64) |
+
+    | getSchedule | 3adc277a | getSchedule(bytes32) |
+    | getNonce | 4136a33c | getNonce(bytes32) |
+    | schedule | f801a698 | schedule(address,bytes,uint48) |
+    | execute | 1cff79cd | execute(address,bytes) |
+    | cancel | d6bb62c6 | cancel(address,address,bytes) |
+    | consumeScheduledOp | 94c7d7ee | consumeScheduledOp(address,bytes) |
+    | hashOperation | abd9bd2a | hashOperation(address,address,bytes) |
+
+    | updateAuthority | 18ff183c | updateAuthority(address,address) |
+
+    <details>
+        <summary>Role Management module</summary>
+        <details>
+            <summary>External</summary>
+            - `canCall`
+        </details>
+        <details>
+            <summary>Internal</summary>
+            - onlyAuthorized
+            - _checkAuthorized
+            - _canCallSelf
+        </details>
+    </details>
+    <details>
+        <summary>Timelock executor module</summary>
+        - schedule
+        - cancel
+        - execute
+        - consumeScheduledOp
+    </details>
+        
+    getRoleAdmin: 
+        Rule: the global ADMIN_ROLE is the admin role of all other roles by default
+        `forge test --mt `
+    
+    _getAdminRestrictions:
+        内部Role的访问权限查询:
+            updateAuthority, setTargetClosed, setTargetFunctionRole -> ADMIN_ROLE + configed_delay (role_admin_delay)
+            labelRole, setRoleAdmin, setRoleGuardian, setGrantDelay, setTargetAdminDelay -> ADMIN_ROLE + 0
+            grantRole, revokeRole -> role_admin, 0
+            otherwise -> false, 0, 0
+    
+    grantRole, revokeRole, renounceRole: 
+        Rule: can not grant / revoke PUBLIC_ROLE
+
+</details>
 
 - onlyAuthorized
 - [x] setTargetAdminDelay(address target, uint32 newDelay)
-- [x] setTargetClosed(address target, bool closed) 
-
+- [x] setTargetClosed(address target, bool closed)  -->
 
 - **function onlyAuthorized:**
 
@@ -284,12 +330,12 @@ function _getAdminRestrictions(
    return (false, 0, 0);
 }
 ```
-| selector | restricted | role | delay |
-|---|---|---|---|
-| `labelRole` `setRoleAdmin` `setRoleGuardian` `setGrantDelay` `setTargetAdminDelay` | true | ADMIN_ROLE  | 0 |
-|   `updateAuthority` `setTargetClosed` `setTargetFunctionRole` | true | ADMIN_ROLE | getTargetAdminDelay(target) |
-|   `grantRole` `revokeRole`    | true | getRoleAdmin(roleId)   | 0 |
-
+| Level | selector | restricted | role | delay |
+|---|---|---|---|---|
+|**1**| `labelRole` `setRoleAdmin` `setRoleGuardian` `setGrantDelay` `setTargetAdminDelay` | true | ADMIN_ROLE  | 0 |
+|**2**|   `updateAuthority` `setTargetClosed` `setTargetFunctionRole` | true | ADMIN_ROLE | getTargetAdminDelay(target) |
+|**3**|   `grantRole` `revokeRole`    | true | getRoleAdmin(roleId)   | 0 |
+|**4**|   otherwise    | false (i.e. unauthorized) | 0 | 0 |
 
 - **function grantRole:**
 
@@ -323,3 +369,51 @@ function _grantRole(
     return newMember;
 }
 ```
+
+- Grant Role Delay: 
+
+`setGrantDelay`: 
+
+<!-- 
+
++🔍canCall()
+
++🔍getTargetFunctionRole()
++🔍getTargetAdminDelay()
+
++🔍getAccess()
++🔍hasRole() -->
+
+
+
+
+
+
+
+<!-- +setTargetFunctionRole()
+#_setTargetFunctionRole()
++setTargetAdminDelay()
+#_setTargetAdminDelay()
++setTargetClosed()
+#_setTargetClosed()
++🔍getSchedule()
++🔍getNonce()
++schedule()
+-🔍_checkNotScheduled()
++💰execute()
++cancel()
++consumeScheduledOp()
+#_consumeScheduledOp()
++🔍hashOperation()
++updateAuthority()
+-_checkAuthorized()
+-🔍_getAdminRestrictions()
+-🔍_canCallExtended()
+-🔍_canCallSelf()
+-🔍_isExecuting()
+-🔍_isExpired()
+-🔍_checkSelector()
+-🔍_hashExecutionId() -->
+
+<!-- cheat sheet -->
+

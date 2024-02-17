@@ -5,6 +5,28 @@ import type * as Preset from '@docusaurus/preset-classic';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
+import { rehypeExtendedTable } from 'rehype-extended-table';
+
+import remarkCodeSnippets from 'remark-code-snippets';
+
+const remarkPluginsConfig = {
+  remarkPlugins: [
+    remarkMath,
+    remarkCodeSnippets,
+  ]
+}
+
+const rehypePluginsConfig = {
+  rehypePlugins: [
+    rehypeKatex,
+    rehypeExtendedTable,
+  ]
+}
+
+const commonDocsPluginConfig = {
+  ...remarkPluginsConfig,
+  ...rehypePluginsConfig
+}
 
 const config: Config = {
   title: 'Hello DeFi',
@@ -32,7 +54,25 @@ const config: Config = {
     locales: ['en'],
   },
 
-  themes: ['@docusaurus/theme-live-codeblock'],
+  markdown: {
+    mermaid: true,
+    remarkRehypeOptions: {
+      footnoteLabel: "References"
+    }
+  },
+
+  themes: [
+    [
+      '@docusaurus/theme-mermaid',
+      {
+        theme: {
+          light: 'neutral',
+          dark: 'forest',
+        },
+      }, 
+    ],
+    '@docusaurus/theme-live-codeblock',
+  ],
 
   presets: [
     [
@@ -41,8 +81,7 @@ const config: Config = {
         docs: {
           path: 'docs',
           sidebarPath: './sidebars.ts',
-          remarkPlugins: [remarkMath],
-          rehypePlugins: [rehypeKatex],
+          ...commonDocsPluginConfig
         },
         blog: false,
         theme: {
@@ -51,7 +90,7 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
-
+  
   stylesheets: [
     {
       href: 'https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css',

@@ -11,13 +11,15 @@ export const data = transformData([
         "OpenZeppelin": {
             "openzeppelin-contracts": {
               "access": {
-                "manager": "doing"
+                "Manager": "doing",
+                "Ownable": "pending",
+                "AccessControl": "pending"
               },
               "proxy": {
                   "Clones": "done"
               },
               "utils": {
-                "Time": "doing"
+                "Time": "done"
               }
             },
             "openzeppelin-upgradeable": {
